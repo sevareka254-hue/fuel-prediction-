@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import joblib
 
 df = pd.read_csv("fleet_fuel_training_clean.csv")
