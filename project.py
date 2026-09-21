@@ -130,31 +130,31 @@ model.fit(X_train, y_train)
 import os
 joblib.dump(model, r"C:\Users\Office\Desktop\model\model.pkl")
 
-# y_pred = model.predict(X_test)
+ y_pred = model.predict(X_test)
 
-# from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error
 
-# mae = mean_absolute_error(y_test, y_pred)
+mae = mean_absolute_error(y_test, y_pred)
 
-# print("MAE:", mae)
+print("MAE:", mae)
 
-# from sklearn.metrics import mean_absolute_percentage_error
+from sklearn.metrics import mean_absolute_percentage_error
 
-# mape = mean_absolute_percentage_error(y_test, y_pred) * 100
+mape = mean_absolute_percentage_error(y_test, y_pred) * 100
 
-# print("MAPE:", mape, "%")
+print("MAPE:", mape, "%")
 
-# baseline_pred = (
-#     X_test["distance_km"]
-#     * X_test["nominal_l_per_100km"]
-#     / 100
-# )
+baseline_pred = (
+    X_test["distance_km"]
+    * X_test["nominal_l_per_100km"]
+    / 100
+)
 
-# baseline_mae = mean_absolute_error(y_test, baseline_pred)
+baseline_mae = mean_absolute_error(y_test, baseline_pred)
 
-# baseline_mape = (
-#     mean_absolute_percentage_error(y_test, baseline_pred) * 100
-# )
+baseline_mape = (
+    mean_absolute_percentage_error(y_test, baseline_pred) * 100
+)
 
-# print("Baseline MAE:", baseline_mae)
-# print("Baseline MAPE:", baseline_mape)
+print("Baseline MAE:", baseline_mae)
+print("Baseline MAPE:", baseline_mape)
