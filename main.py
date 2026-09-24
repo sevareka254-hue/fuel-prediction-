@@ -11,25 +11,35 @@ app = FastAPI(
 )
 
 
-
-
 model = joblib.load("model.pkl")
-
-
 
 
 class PredictionInput(BaseModel):
 
-    
-
-    distance_km: float = Field(
+    route_km: float = Field(
         gt=0,
-        description="Distance in kilometers"
+        description="Route distance in kilometers"
     )
 
-    duration_min: float = Field(
+    fuel_price: float = Field(
         gt=0,
-        description="Trip duration in minutes"
+        description="Fuel price"
+    )
+
+    passengers: int = Field(
+        ge=0,
+        description="Number of passengers"
+    )
+
+    load_kg: float = Field(
+        ge=0,
+        description="Vehicle load in kilograms"
+    )
+
+    ac_used: int = Field(
+        ge=0,
+        le=1,
+        description="Air conditioning: 0 or 1"
     )
 
     vehicle_year: int = Field(
@@ -49,32 +59,6 @@ class PredictionInput(BaseModel):
         ge=0
     )
 
-    passengers: int = Field(
-        ge=0
-    )
-
-    load_kg: float = Field(
-        ge=0
-    )
-
-    ac_used: int = Field(
-        ge=0,
-        le=1
-    )
-
-    urban_share: float = Field(
-        ge=0,
-        le=1
-    )
-
-    highway_share: float = Field(
-        ge=0,
-        le=1
-    )
-
-
-   
-
     vehicle_type: str
 
     make: str
@@ -85,10 +69,6 @@ class PredictionInput(BaseModel):
 
     traffic_band: str
 
-    weather: str
-
-
-
 
 @app.get("/")
 def home():
@@ -98,30 +78,60 @@ def home():
     }
 
 
-
 @app.post("/predict")
 def predict(data: PredictionInput):
 
-    
 
     input_data = pd.DataFrame([
         data.model_dump()
     ])
 
 
+    baseline_prediction = (
+        data.route_km *
+        data.nominal_l_per_100km
+    ) / 100
+
 
 
     prediction = model.predict(input_data)
 
-
-    
-
-    predicted_liters = max(
+    ml_prediction = max(
         0,
         float(prediction[0])
     )
 
 
+
+    if baseline_prediction <= ml_prediction:
+
+        selected_prediction = baseline_prediction
+        selected_method = "baseline"
+
+    else:
+
+        selected_prediction = ml_prediction
+        selected_method = "linear_regression"
+
+
+  
+
     return {
-        "predicted_liters": predicted_liters
+
+        "baseline_prediction_liters": round(
+            baseline_prediction,
+            2
+        ),
+
+        "ml_prediction_liters": round(
+            ml_prediction,
+            2
+        ),
+
+        "predicted_liters": round(
+            selected_prediction,
+            2
+        ),
+
+        "selected_method": selected_method
     }
