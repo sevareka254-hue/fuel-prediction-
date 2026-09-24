@@ -10,11 +10,49 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 
 
+reservations = pd.read_csv("seed_reservations.csv")
+vehicles = pd.read_csv("seed_vehicles.csv")
 
 
-df = pd.read_csv("fleet_fuel_training_clean.csv")
+
+vehicle_columns = [
+    "vehicle_id",
+    "make",
+    "model",
+    "vehicle_year",
+    "seats",
+    "fuel_type",
+    "nominal_l_per_100km",
+    "allowed_load_kg"
+]
+
+df = reservations.merge(
+    vehicles[vehicle_columns],
+    on="vehicle_id",
+    how="left"
+)
 
 
+print("Dataset shape:", df.shape)
+print("Columns:")
+print(df.columns.tolist())
+
+
+
+df = df[
+    (df["status"] == "completed") &
+    (df["actual_fuel_liters"].notna())
+].copy()
+
+
+print("\nRows used:", len(df))
+
+
+
+df["baseline_fuel_liters"] = (
+    df["route_km"] *
+    df["nominal_l_per_100km"]
+) / 100
 
 
 categorical_features = [
@@ -22,31 +60,29 @@ categorical_features = [
     "make",
     "model",
     "fuel_type",
-    "traffic_band",
-    "weather"
+    "traffic_band"
 ]
 
 numerical_features = [
-    "distance_km",
-    "duration_min",
-    "vehicle_year",
-    "seats",
-    "nominal_l_per_100km",
-    "allowed_load_kg",
+    "route_km",
+    "fuel_price",
     "passengers",
     "load_kg",
     "ac_used",
-    "urban_share",
-    "highway_share"
+    "vehicle_year",
+    "seats",
+    "nominal_l_per_100km",
+    "allowed_load_kg"
 ]
 
 features = categorical_features + numerical_features
 
 
 X = df[features]
-y = df["actual_liters"]
+y = df["actual_fuel_liters"]
 
 
+print("\nFeatures shape:", X.shape)
 
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -58,10 +94,12 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 
-
 categorical_pipeline = Pipeline(
     steps=[
-        ("imputer", SimpleImputer(strategy="most_frequent")),
+        (
+            "imputer",
+            SimpleImputer(strategy="most_frequent")
+        ),
         (
             "encoder",
             OneHotEncoder(handle_unknown="ignore")
@@ -72,7 +110,10 @@ categorical_pipeline = Pipeline(
 
 numerical_pipeline = Pipeline(
     steps=[
-        ("imputer", SimpleImputer(strategy="median"))
+        (
+            "imputer",
+            SimpleImputer(strategy="median")
+        )
     ]
 )
 
@@ -94,7 +135,6 @@ preprocessor = ColumnTransformer(
 
 
 
-
 model = Pipeline(
     steps=[
         ("preprocessor", preprocessor),
@@ -107,15 +147,18 @@ model = Pipeline(
 
 model.fit(X_train, y_train)
 
-
-
+\
 
 y_pred = model.predict(X_test)
 
-
 y_pred = y_pred.clip(min=0)
 
-mae = mean_absolute_error(y_test, y_pred)
+
+
+mae = mean_absolute_error(
+    y_test,
+    y_pred
+)
 
 mape = mean_absolute_percentage_error(
     y_test,
@@ -123,12 +166,47 @@ mape = mean_absolute_percentage_error(
 ) * 100
 
 
-print("MAE:", mae)
-print("MAPE:", mape, "%")
+
+
+baseline_test = df.loc[
+    X_test.index,
+    "baseline_fuel_liters"
+]
+
+baseline_mae = mean_absolute_error(
+    y_test,
+    baseline_test
+)
+
+baseline_mape = mean_absolute_percentage_error(
+    y_test,
+    baseline_test
+) * 100
 
 
 
 
-joblib.dump(model, "model.pkl")
+print("\n==============================")
+print("BASELINE")
+print("==============================")
 
-print("Model saved successfully as model.pkl")
+print("Baseline MAE:", baseline_mae)
+print("Baseline MAPE:", baseline_mape, "%")
+
+
+print("\n==============================")
+print("ML MODEL")
+print("==============================")
+
+print("ML MAE:", mae)
+print("ML MAPE:", mape, "%")
+
+
+
+
+joblib.dump(
+    model,
+    "model.pkl"
+)
+
+print("\nModel saved successfully as model.pkl")
